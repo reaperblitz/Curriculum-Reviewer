@@ -1,6 +1,7 @@
 ---
 description: หัวหน้าผู้ตรวจหลักสูตร (primary) อ่านเกณฑ์และตัวอย่างใน pdf/ เอง แล้วตรวจไฟล์เป้าหมาย
 mode: primary
+model: opencode/space-bunny-free
 steps: 30
 permissions:
   - action: read
@@ -14,9 +15,6 @@ permissions:
     effect: allow
   - action: grep
     resource: "*"
-    effect: allow
-  - action: write
-    resource: "reports/**/*"
     effect: allow
   - action: edit
     resource: "reports/**/*"

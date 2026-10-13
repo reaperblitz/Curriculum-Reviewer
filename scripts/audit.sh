@@ -8,6 +8,8 @@
 set -euo pipefail
 
 TARGET_INPUT="${1:-${CURRICULUM_FILE:-}}"
+# โมเดลดีฟอลต์: ฟรี (เปลี่ยนด้วย Variables OPENCODE_MODEL)
+MODEL="${OPENCODE_MODEL:-opencode/space-bunny-free}"
 STRICTNESS="${AUDIT_STRICTNESS:-standard}"   # standard | strict
 CALL_TIMEOUT="${OPENCODE_TIMEOUT_SEC:-900}"  # กันงานค้าง: สูงสุด 15 นาทีต่อ 1 พรอมต์
 TMPDIR_WORK="${RUNNER_TEMP:-/tmp}/audit-$$"
@@ -30,7 +32,7 @@ STRICT_LINE="ตรวจตามเกณฑ์ปกติ"
 if [[ "$STRICTNESS" == "strict" ]]; then
   STRICT_LINE="ตรวจแบบเข้มงวด (strict): จุดที่น่าสงสัยให้ตีเป็น FAIL ไว้ก่อน"
 fi
-echo "▶ เป้าหมาย: $TARGET | ความเข้ม: $STRICTNESS"
+echo "▶ เป้าหมาย: $TARGET | โมเดล: $MODEL | ความเข้ม: $STRICTNESS"
 
 # ไม่บังคับคีย์ — ถ้ามีคีย์ใน Secrets opencode จะใช้เองผ่าน env
 # ถ้าไม่มีเลยก็ลองรัน ขั้นไหนไม่สำเร็จข้ามไป รายงานบอกตรง ๆ (ท่าเดียวกับ wayla-work)
@@ -57,7 +59,7 @@ render() { # $1=prompt file, rest: NAME=value
 # ---------- ตัวช่วย: เรียก opencode (ล้มได้ ไม่ตาย) ----------
 run_oc() { # $1=full prompt → stdout; ว่างเปล่าถ้าล้ม
   local prompt="$1" out
-  if out="$(timeout "$CALL_TIMEOUT" opencode run "$prompt" 2>"$TMPDIR_WORK/oc_err.log")"; then
+  if out="$(timeout "$CALL_TIMEOUT" opencode run --model "$MODEL" "$prompt" 2>"$TMPDIR_WORK/oc_err.log")"; then
     printf '%s' "$out"
   else
     echo "⚠ opencode ขั้นนี้ไม่สำเร็จ — ข้ามไปขั้นต่อไป" >&2

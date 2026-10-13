@@ -1,6 +1,7 @@
 ---
 description: โหวต APPROVE/DENY ด้านความสอดคล้องตามเกณฑ์บังคับ (อ่านไฟล์เอง)
 mode: all
+model: opencode/space-bunny-free
 steps: 10
 permissions:
   - action: read
