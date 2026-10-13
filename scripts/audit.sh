@@ -7,7 +7,7 @@
 set -euo pipefail
 
 TARGET_INPUT="${1:-${CURRICULUM_FILE:-}}"
-MODEL="${OPENCODE_MODEL:-anthropic/claude-sonnet-4-5}"
+MODEL="${OPENCODE_MODEL:-opencode/space-bunny-free}"
 STRICTNESS="${AUDIT_STRICTNESS:-standard}"   # standard | strict
 CALL_TIMEOUT="${OPENCODE_TIMEOUT_SEC:-900}"  # กันงานค้าง: สูงสุด 15 นาทีต่อ 1 พรอมต์
 TMPDIR_WORK="${RUNNER_TEMP:-/tmp}/audit-$$"

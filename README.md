@@ -31,7 +31,7 @@
 ### 2. ตั้งค่า Variables (ได้ที่เดียวกัน เมนู Variables)
 | ชื่อ | ค่าเริ่มต้น | ความหมาย |
 |---|---|---|
-| `OPENCODE_MODEL` | `anthropic/claude-sonnet-4-5` | โมเดลที่ใช้ตรวจ อยากเร็ว/ถูกใช้ `anthropic/claude-haiku-4-5` |
+| `OPENCODE_MODEL` | `opencode/space-bunny-free` (ฟรี ไม่เก็บข้อมูลไปเทรน) | โมเดลที่ใช้ตรวจ อยากคุณภาพสูงใช้ `anthropic/claude-sonnet-4-5` (ต้องมีคีย์จ่ายเงิน) |
 | `AUDIT_STRICTNESS` | `standard` | `standard` ปกติ / `strict` เข้มงวด |
 
 ### 3. ไฟล์สำคัญใน repo
