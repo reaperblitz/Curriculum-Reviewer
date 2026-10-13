@@ -7,7 +7,7 @@
 set -euo pipefail
 
 TARGET_INPUT="${1:-${CURRICULUM_FILE:-}}"
-MODEL="${OPENCODE_MODEL:-opencode/space-bunny-free}"
+MODEL="${OPENCODE_MODEL:-}"
 STRICTNESS="${AUDIT_STRICTNESS:-standard}"   # standard | strict
 CALL_TIMEOUT="${OPENCODE_TIMEOUT_SEC:-900}"  # กันงานค้าง: สูงสุด 15 นาทีต่อ 1 พรอมต์
 TMPDIR_WORK="${RUNNER_TEMP:-/tmp}/audit-$$"
@@ -19,9 +19,11 @@ command -v opencode >/dev/null 2>&1 || {
   exit 1
 }
 if [[ -z "${ANTHROPIC_API_KEY:-}" && -z "${OPENAI_API_KEY:-}" && -z "${OPENCODE_API_KEY:-}" ]]; then
-  echo "⚠ ไม่พบ API key ใน Secrets — จะลองรันด้วยสิทธิ์ดีฟอลต์ของ OpenCode ก่อน" >&2
-  echo "  (โมเดลฟรีของ OpenCode ใช้ได้เฉพาะในแอป OpenCode หรือเมื่อมี OPENCODE_API_KEY" >&2
-  echo "   ถ้ารันแล้วล้มเหลว ให้เพิ่ม Secrets: OPENCODE_API_KEY (ใช้โมเดลฟรี) หรือ ANTHROPIC_API_KEY)" >&2
+  echo "❌ ไม่พบ API key ใน Secrets — เพิ่มคีย์ก่อนแล้วรันใหม่" >&2
+  echo "  1. เปิด Settings → Secrets and variables → Actions → New secret" >&2
+  echo "  2. ชื่อ OPENCODE_API_KEY ค่าจาก opencode.ai/console (ฟรี) หรือ ANTHROPIC_API_KEY" >&2
+  echo "  3. สั่งตรวจใหม่ (Secrets แยกกันแต่ละ repo — มีใน repo อื่นไม่ได้แปลว่ามีใน repo นี้)" >&2
+  exit 1
 fi
 
 # ป้องกัน path traversal: รับเฉพาะชื่อไฟล์ ต้องอยู่ใน curriculums/
@@ -35,7 +37,7 @@ if [[ ! -f "$TARGET" ]]; then
   echo "❌ ไม่พบไฟล์ $TARGET — commit ไฟล์เข้าโฟลเดอร์ curriculums/ ก่อน แล้วค่อยสั่งตรวจ" >&2
   exit 1
 fi
-echo "▶ เป้าหมาย: $TARGET | โมเดล: $MODEL | ความเข้ม: $STRICTNESS"
+echo "▶ เป้าหมาย: $TARGET | โมเดล: ${MODEL:-(ให้ opencode เลือกดีฟอลต์เอง)} | ความเข้ม: $STRICTNESS"
 
 SHA="$(sha256sum "$TARGET" | cut -d' ' -f1)"
 TODAY="$(date -u +%Y-%m-%d)"
@@ -48,7 +50,9 @@ fi
 
 run_oc() { # $1=agent $2=prompt $3=use_continue(yes/no)
   local agent="$1" prompt="$2" cont="$3"
-  local args=(run --standalone --model "$MODEL" --agent "$agent")
+  local args=(--standalone run --agent "$agent")
+  # ส่ง --model เฉพาะเมื่อกำหนด OPENCODE_MODEL ไว้ ไม่งั้นให้ opencode เลือกโมเดลดีฟอลต์ของผู้ให้บริการเอง
+  [[ -n "$MODEL" ]] && args+=(--model "$MODEL")
   [[ "$cont" == "yes" ]] && args+=(--continue)
   timeout "$CALL_TIMEOUT" opencode "${args[@]}" "$prompt"
 }

@@ -31,7 +31,7 @@
 ### 2. ตั้งค่า Variables (ได้ที่เดียวกัน เมนู Variables)
 | ชื่อ | ค่าเริ่มต้น | ความหมาย |
 |---|---|---|
-| `OPENCODE_MODEL` | `opencode/space-bunny-free` (ฟรี ไม่เก็บข้อมูลไปเทรน) | โมเดลที่ใช้ตรวจ อยากคุณภาพสูงใช้ `anthropic/claude-sonnet-4-5` (ต้องมีคีย์จ่ายเงิน) |
+| `OPENCODE_MODEL` | (ว่าง = ให้ opencode เลือกดีฟอลต์เอง) | บังคับโมเดล เช่น `opencode/space-bunny-free` (ฟรี) หรือ `anthropic/claude-sonnet-4-5` (จ่ายเงิน คุณภาพสูง) |
 | `AUDIT_STRICTNESS` | `standard` | `standard` ปกติ / `strict` เข้มงวด |
 
 ### 3. ไฟล์สำคัญใน repo

@@ -1,9 +1,8 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  // โมเดลหลัก: ฟรี ไม่เก็บข้อมูลไปเทรน (zero-retention)
-  // เปลี่ยนต่อรอบด้วย: opencode run --model <provider/model>
-  // ตัวเลือกจ่ายเงินคุณภาพสูง: "anthropic/claude-sonnet-4-5"
-  "model": "opencode/space-bunny-free",
+  // ไม่ตั้งค่า model ตรงนี้ — ให้ opencode เลือกโมเดลดีฟอลต์ของผู้ให้บริการที่มีคีย์เอง
+  // ถ้าอยากบังคับ ตั้ง Variables: OPENCODE_MODEL เช่น "opencode/space-bunny-free" (ฟรี)
+  // หรือ "anthropic/claude-sonnet-4-5" (จ่ายเงิน คุณภาพสูง)
   "default_agent": "auditor",
   "agents": {
     "auditor": {
