@@ -32,6 +32,25 @@ if [[ "$STRICTNESS" == "strict" ]]; then
 fi
 echo "▶ เป้าหมาย: $TARGET | ความเข้ม: $STRICTNESS"
 
+# ---------- เลือกโมเดลแบบชัดแจ้ง + ต้องมีคีย์ 1 อย่าง (กันตกไปโดนประตูล็อก free-tier) ----------
+# ลำดับ: OPENCODE_MODEL (บังคับเอง) → ตามคีย์ที่มี → ไม่มีเลย = ตายพร้อมวิธีแก้
+if [[ -n "${OPENCODE_MODEL:-}" ]]; then
+  MODEL="$OPENCODE_MODEL"
+elif [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+  MODEL="anthropic/claude-sonnet-4-5"
+elif [[ -n "${OPENAI_API_KEY:-}" ]]; then
+  MODEL="openai/gpt-4o-mini"
+elif [[ -n "${OPENCODE_API_KEY:-}" ]]; then
+  MODEL="opencode/claude-sonnet-4-5"
+else
+  echo "❌ รันไม่ได้: ไม่พบคีย์ใน Secrets — runner เปล่าต้องมีตัวตน 1 อย่าง" >&2
+  echo "  1. เปิด Settings → Secrets and variables → Actions → New secret" >&2
+  echo "  2. ใส่คีย์ใดคีย์หนึ่ง: ANTHROPIC_API_KEY / OPENAI_API_KEY / OPENCODE_API_KEY" >&2
+  echo "  3. สั่งตรวจใหม่ (โมเดลจะถูกเลือกให้ตรงกับคีย์เอง)" >&2
+  exit 1
+fi
+echo "▶ โมเดล: $MODEL"
+
 SHA="$(sha256sum "$TARGET" | cut -d' ' -f1)"
 TODAY="$(date -u +%Y-%m-%d)"
 DRAFT_FILE="$TMPDIR_WORK/draft.md"
@@ -48,10 +67,10 @@ render() { # $1=prompt file, rest: NAME=value
   printf '%s' "$text"
 }
 
-# ---------- ตัวช่วย: เรียก opencode ท่าเดียวกับ wayla-work (ล้มได้ ไม่ตาย) ----------
+# ---------- ตัวช่วย: เรียก opencode (ล้มได้ ไม่ตาย) ----------
 run_oc() { # $1=full prompt → stdout; ว่างเปล่าถ้าล้ม
   local prompt="$1" out
-  if out="$(timeout "$CALL_TIMEOUT" opencode run "$prompt" 2>"$TMPDIR_WORK/oc_err.log")"; then
+  if out="$(timeout "$CALL_TIMEOUT" opencode run --model "$MODEL" "$prompt" 2>"$TMPDIR_WORK/oc_err.log")"; then
     printf '%s' "$out"
   else
     echo "⚠ opencode ขั้นนี้ไม่สำเร็จ — ข้ามไปขั้นต่อไป" >&2
