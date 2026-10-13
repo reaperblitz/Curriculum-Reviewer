@@ -32,24 +32,11 @@ if [[ "$STRICTNESS" == "strict" ]]; then
 fi
 echo "▶ เป้าหมาย: $TARGET | ความเข้ม: $STRICTNESS"
 
-# ---------- เลือกโมเดลแบบชัดแจ้ง + ต้องมีคีย์ 1 อย่าง (กันตกไปโดนประตูล็อก free-tier) ----------
-# ลำดับ: OPENCODE_MODEL (บังคับเอง) → ตามคีย์ที่มี → ไม่มีเลย = ตายพร้อมวิธีแก้
-if [[ -n "${OPENCODE_MODEL:-}" ]]; then
-  MODEL="$OPENCODE_MODEL"
-elif [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
-  MODEL="anthropic/claude-sonnet-4-5"
-elif [[ -n "${OPENAI_API_KEY:-}" ]]; then
-  MODEL="openai/gpt-4o-mini"
-elif [[ -n "${OPENCODE_API_KEY:-}" ]]; then
-  MODEL="opencode/claude-sonnet-4-5"
-else
-  echo "❌ รันไม่ได้: ไม่พบคีย์ใน Secrets — runner เปล่าต้องมีตัวตน 1 อย่าง" >&2
-  echo "  1. เปิด Settings → Secrets and variables → Actions → New secret" >&2
-  echo "  2. ใส่คีย์ใดคีย์หนึ่ง: ANTHROPIC_API_KEY / OPENAI_API_KEY / OPENCODE_API_KEY" >&2
-  echo "  3. สั่งตรวจใหม่ (โมเดลจะถูกเลือกให้ตรงกับคีย์เอง)" >&2
-  exit 1
+# ไม่บังคับคีย์ — ถ้ามีคีย์ใน Secrets opencode จะใช้เองผ่าน env
+# ถ้าไม่มีเลยก็ลองรัน ขั้นไหนไม่สำเร็จข้ามไป รายงานบอกตรง ๆ (ท่าเดียวกับ wayla-work)
+if [[ -z "${ANTHROPIC_API_KEY:-}" && -z "${OPENAI_API_KEY:-}" && -z "${OPENCODE_API_KEY:-}" ]]; then
+  echo "ℹ ไม่มีคีย์ใน Secrets — ลองรันเลย ถ้า AI ไม่ตอบ รายงานจะส่งให้คนตรวจ" >&2
 fi
-echo "▶ โมเดล: $MODEL"
 
 SHA="$(sha256sum "$TARGET" | cut -d' ' -f1)"
 TODAY="$(date -u +%Y-%m-%d)"
@@ -70,7 +57,7 @@ render() { # $1=prompt file, rest: NAME=value
 # ---------- ตัวช่วย: เรียก opencode (ล้มได้ ไม่ตาย) ----------
 run_oc() { # $1=full prompt → stdout; ว่างเปล่าถ้าล้ม
   local prompt="$1" out
-  if out="$(timeout "$CALL_TIMEOUT" opencode run --model "$MODEL" "$prompt" 2>"$TMPDIR_WORK/oc_err.log")"; then
+  if out="$(timeout "$CALL_TIMEOUT" opencode run "$prompt" 2>"$TMPDIR_WORK/oc_err.log")"; then
     printf '%s' "$out"
   else
     echo "⚠ opencode ขั้นนี้ไม่สำเร็จ — ข้ามไปขั้นต่อไป" >&2
