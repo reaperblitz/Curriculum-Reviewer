@@ -18,9 +18,10 @@ command -v opencode >/dev/null 2>&1 || {
   echo "❌ ไม่พบคำสั่ง opencode — ติดตั้งก่อน: npm install --global @opencode/cli" >&2
   exit 1
 }
-if [[ -z "${ANTHROPIC_API_KEY:-}" && -z "${OPENAI_API_KEY:-}" ]]; then
-  echo "❌ ไม่พบ API key — ตั้งค่า Secrets: ANTHROPIC_API_KEY (แนะนำ) หรือ OPENAI_API_KEY" >&2
-  exit 1
+if [[ -z "${ANTHROPIC_API_KEY:-}" && -z "${OPENAI_API_KEY:-}" && -z "${OPENCODE_API_KEY:-}" ]]; then
+  echo "⚠ ไม่พบ API key ใน Secrets — จะลองรันด้วยสิทธิ์ดีฟอลต์ของ OpenCode ก่อน" >&2
+  echo "  (โมเดลฟรีของ OpenCode ใช้ได้เฉพาะในแอป OpenCode หรือเมื่อมี OPENCODE_API_KEY" >&2
+  echo "   ถ้ารันแล้วล้มเหลว ให้เพิ่ม Secrets: OPENCODE_API_KEY (ใช้โมเดลฟรี) หรือ ANTHROPIC_API_KEY)" >&2
 fi
 
 # ป้องกัน path traversal: รับเฉพาะชื่อไฟล์ ต้องอยู่ใน curriculums/
