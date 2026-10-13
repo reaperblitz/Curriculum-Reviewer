@@ -15,17 +15,17 @@
 
 ## วิธีติดตั้ง (สำหรับแอดมิน — ทำครั้งเดียว)
 
-### 1. เพิ่ม Secrets (Settings → Secrets and variables → Actions)
-| ชื่อ | จำเป็น | วิธีหา |
-|---|---|---|
-| `OPENCODE_API_KEY` | ฟรีได้ (แนะนำถ้าไม่อยากจ่าย) | opencode.ai/console → Sign in → copy API key → ใช้กับโมเดล `opencode/*` ที่ฟรี เช่น `opencode/space-bunny-free` (ไม่เก็บข้อมูลไปเทรน) |
-| `ANTHROPIC_API_KEY` | ถ้าอยากได้คุณภาพสูงสุด | สมัครที่ console.anthropic.com → API Keys |
-| `OPENAI_API_KEY` | สำรอง | platform.openai.com → API keys |
+### 1. Secrets — ไม่บังคับ ✅
+ท่าเดียวกับ wayla-work: ถ้ามี `OPENCODE_API_KEY` หรือ `ANTHROPIC_API_KEY`
+ระบบจะใช้ผ่าน env อัตโนมัติ ถ้าไม่มีก็ลองรันเลย ขั้นไหน AI ไม่ตอบจะข้ามไป
+งานจบเขียวเสมอ แล้วรายงานจะบอกตรง ๆ ว่าตรวจได้แค่ไหน (โหวตไม่ออก = ส่งคนตรวจ)
 
-> หมายเหตุ: โมเดลฟรีของ OpenCode ใช้งานได้โดยไม่เสียเงิน แต่รันเนอร์ของ GitHub
-> เป็นเครื่องเปล่าจึงต้องมีคีย์ยืนยันตัวตน — ต่างจากในแอป OpenCode
-> บนเครื่องตัวเองที่ล็อกอินไว้แล้ว ถ้าไม่ใส่คีย์เลยสคริปต์จะลองรันให้ก่อน
-> แล้วแจ้งเตือนถ้าล้มเหลว (ตั้ง `OPENCODE_MODEL=opencode/space-bunny-free` ใน Variables เพื่อใช้โมเดลฟรี)
+อยากคุณภาพสูงค่อยเพิ่ม:
+| ชื่อ | ผล |
+|---|---|
+| `OPENCODE_API_KEY` | ใช้โมเดลของ OpenCode Console |
+| `ANTHROPIC_API_KEY` | ใช้ Claude |
+| `OPENAI_API_KEY` | สำรอง |
 | `DISCORD_WEBHOOK_URL` | ไม่บังคับ (แต่แนะนำ) | ช่อง Discord → แก้ไขช่อง → การผสานรวม → Webhook |
 
 ### 2. ตั้งค่า Variables (ได้ที่เดียวกัน เมนู Variables)
