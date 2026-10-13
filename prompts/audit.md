@@ -5,6 +5,9 @@ You are the curriculum auditor for a Thai university. Do step 2 only, then stop.
 TARGET={{TARGET}}
 STRICT={{STRICT_LINE}}
 
+Orientation from step 1 (criteria + chosen references — trust it, do not resurvey):
+{{ORIENT}}
+
 Rules:
 - Read TARGET fully YOURSELF with the read tool, then audit it against the criteria
   and examples you surveyed in step 1.

@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================
 # สคริปต์ตรวจหลักสูตร — เริ่มงาน + ส่งพรอมต์ให้ OpenCode ทีละขั้น
-# ท่าเดียวกับ wayla-work: พรอมต์อยู่ใน prompts/*.md, เรียก bare
-#   opencode --standalone run "$PROMPT"
+# ท่าเดียวกับ wayla-work (bare run ไม่มี flag): opencode run "$PROMPT"
 # ไม่บังคับโมเดล ไม่บังคับคีย์ ไม่มีแปลง PDF — AI อ่านไฟล์เองทั้งหมด
 # ขั้นไหนล้มก็ข้ามไป งานจบเขียวเสมอ (แบบ wayla-work) แล้วรายงานจะบอกตรง ๆ
 # ============================================================
@@ -52,7 +51,7 @@ render() { # $1=prompt file, rest: NAME=value
 # ---------- ตัวช่วย: เรียก opencode ท่าเดียวกับ wayla-work (ล้มได้ ไม่ตาย) ----------
 run_oc() { # $1=full prompt → stdout; ว่างเปล่าถ้าล้ม
   local prompt="$1" out
-  if out="$(timeout "$CALL_TIMEOUT" opencode --standalone run "$prompt" 2>"$TMPDIR_WORK/oc_err.log")"; then
+  if out="$(timeout "$CALL_TIMEOUT" opencode run "$prompt" 2>"$TMPDIR_WORK/oc_err.log")"; then
     printf '%s' "$out"
   else
     echo "⚠ opencode ขั้นนี้ไม่สำเร็จ — ข้ามไปขั้นต่อไป" >&2
@@ -68,7 +67,7 @@ ORIENT="$(run_oc "$(render prompts/orient.md "TARGET=$TARGET" "STRICT_LINE=$STRI
 
 # ---------- 2. อ่านไฟล์เป้าหมาย + ร่างผลตรวจ ----------
 echo "▶ [2/6] อ่านหลักสูตรเป้าหมายและร่างผลตรวจ ..."
-DRAFT="$(run_oc "$(render prompts/audit.md "TARGET=$TARGET" "STRICT_LINE=$STRICT_LINE")")"
+DRAFT="$(run_oc "$(render prompts/audit.md "TARGET=$TARGET" "STRICT_LINE=$STRICT_LINE" "ORIENT=${ORIENT:-(ไม่มีผลสำรวจ)}")")"
 printf '%s' "$DRAFT" > "$DRAFT_FILE"
 
 # ---------- 3-5. โหวต 3 เสียง (รันใหม่อิสระต่อกัน) ----------
@@ -90,7 +89,7 @@ VOTES="เสียงที่ 1 (เกณฑ์): ${V1:-(ไม่มีผ�
 
 # ---------- 6. รวมรายงานฉบับเต็ม (ต่อเซสชันขั้น 1-2) ----------
 echo "▶ [6/6] รวมรายงานฉบับเต็ม ..."
-FINAL="$(run_oc "$(render prompts/finalize.md "VOTES=$VOTES")")"
+FINAL="$(run_oc "$(render prompts/finalize.md "DRAFT=${DRAFT:-(ไม่มีร่าง)}" "VOTES=$VOTES")")"
 if [[ -z "${FINAL//[[:space:]]/}" ]]; then
   FINAL="> ⚠️ รอบนี้ AI ไม่สามารถตรวจได้ (opencode ไม่ตอบ) ไฟล์ได้รับแล้ว กรุณาส่งคณะกรรมการพิจารณาโดยตรง"
 fi
@@ -106,7 +105,7 @@ fi
 if [[ "$DENIES" -eq 0 && "$APPROVES" -eq 0 ]]; then VERDICT="NEEDS REVISION"; fi # อ่านโหวตไม่ออก -> ให้คนตรวจ
 
 mkdir -p reports
-REPORT="reports/audit_${SAFE_NAME%.pdf}.md"
+REPORT="reports/audit_${SAFE_NAME%.*}.md"
 {
   echo "# รายงานการตรวจหลักสูตร: $SAFE_NAME"
   echo ""
