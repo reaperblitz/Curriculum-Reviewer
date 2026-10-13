@@ -1,27 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Curriculum AI Auditor</title>
+    <title>ระบบตรวจหลักสูตรด้วย AI</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>📚 Curriculum Compliance Auditor</h1>
-        <p>Trigger an automated AI compliance audit against stored criteria.</p>
+        <h1>📚 ระบบตรวจหลักสูตรอัตโนมัติ</h1>
+        <p>สั่งตรวจหลักสูตรด้วย AI โดยเทียบกับเกณฑ์และตัวอย่างที่เคยผ่าน</p>
 
         <div class="card">
-            <label for="curriculumFile">Select Curriculum File (.pdf / .docx):</label>
+            <h3>วิธีใช้งาน</h3>
+            <ol>
+                <li>นำไฟล์หลักสูตร (.pdf) ไปไว้ในโฟลเดอร์ <code>curriculums/</code> แล้ว push ขึ้นสาขา main (ระบบจะเริ่มตรวจอัตโนมัติ) <strong>หรือ</strong> เปิด Pull Request ที่มีไฟล์หลักสูตร</li>
+                <li>หรือเลือกไฟล์ด้านล่างแล้วกดปุ่มเพื่อสั่งตรวจรอบพิเศษ (ต้อง commit ไฟล์เข้า <code>curriculums/</code> ก่อน)</li>
+            </ol>
+            <label for="curriculumFile">เลือกไฟล์หลักสูตร (.pdf / .docx):</label>
             <input type="file" id="curriculumFile" accept=".pdf,.docx">
-            
-            <button id="triggerBtn" onclick="startAudit()">Start AI Audit</button>
+
+            <button id="triggerBtn" onclick="startAudit()">เริ่มตรวจด้วย AI</button>
         </div>
 
         <div id="statusCard" class="card hidden">
-            <h3>Audit Status</h3>
-            <p id="statusText">Initiating workflow...</p>
+            <h3>สถานะการตรวจ</h3>
+            <p id="statusText">กำลังเริ่ม...</p>
             <div id="spinner" class="spinner"></div>
+        </div>
+
+        <div class="card">
+            <h3>ดูผลตรวจ</h3>
+            <p>รายงานอยู่ในโฟลเดอร์ <code>reports/</code> และใน Artifacts ของแต่ละรอบในหน้า Actions</p>
         </div>
     </div>
 

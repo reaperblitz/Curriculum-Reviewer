@@ -1,55 +1,139 @@
-name: 2. Run Curriculum Audit
+name: ตรวจหลักสูตร (OpenCode)
 
+# ทำงานเมื่อมีหลักสูตรรอตรวจ: push/PR ที่แตะ curriculums/** หรือสั่งเองจากเว็บแอป
+# สคริปต์มีหน้าที่เริ่มงาน + ส่งพรอมต์ให้ OpenCode เท่านั้น — ไม่มีแปลง PDF
 on:
+  push:
+    branches: [main]
+    paths:
+      - "curriculums/**/*.pdf"
+      - "curriculums/**/*.docx"
+  pull_request:
+    paths:
+      - "curriculums/**/*.pdf"
+      - "curriculums/**/*.docx"
   workflow_dispatch:
+    inputs:
+      curriculum_file:
+        description: "ชื่อไฟล์ใน curriculums/ เช่น Blueprint_....pdf"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+  issues: write
+
+# ตรวจทีละงานต่อสาขา งานเก่าถูกยกเลิกเพื่อประหยัดเวลา
+concurrency:
+  group: audit-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  run-audit:
+  audit:
     runs-on: ubuntu-latest
+    timeout-minutes: 25 # เพดานเวลา: ละเอียดแต่ไม่ลากยาว
 
     steps:
-      - name: Checkout Code
+      - name: Checkout โค้ด (รวมโฟลเดอร์ pdf/)
         uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          fetch-depth: 1
 
-      - name: Install Python Dependencies
-        run: pip install pypdf requests
-
-      - name: Restore Ollama Model Cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.ollama
-          key: ollama-trained-model-${{ github.run_id }}
-          restore-keys: |
-            ollama-trained-model-
-
-      - name: Install & Start Ollama Daemon
+      - name: ตรวจชื่อไฟล์ที่สั่งมา
+        id: target
+        shell: bash
         run: |
-          curl -fsSL https://ollama.com/install.sh | sh
-          ollama serve &
-          echo "Waiting for Ollama daemon to initialize..."
-          until curl -s http://localhost:11434/ > /dev/null; do sleep 1; done
-          
-          # Auto-build model if missing from cache
-          if ! ollama list | grep -q "trained-curriculum-ai"; then
-            echo "Model not found in runner. Building from Modelfile..."
-            ollama pull llama3.2:1b
-            python scripts/prepare_model.py
-            ollama create trained-curriculum-ai -f Modelfile
+          set -euo pipefail
+          INPUT="${{ inputs.curriculum_file }}"
+          if [ -n "$INPUT" ]; then
+            SAFE="$(basename -- "$INPUT")" # ตัด path แปลกปลอมกัน traversal
+            echo "file=$SAFE" >> "$GITHUB_OUTPUT"
+            if [ ! -f "curriculums/$SAFE" ]; then
+              echo "::error::ไม่พบ curriculums/$SAFE — commit ไฟล์ก่อนแล้วค่อยสั่งตรวจ"
+              exit 1
+            fi
+          else
+            echo "file=" >> "$GITHUB_OUTPUT"
           fi
-          ollama list
+          ls -la curriculums/
 
-      - name: Run Audit Execution
+      - name: ติดตั้ง Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: ติดตั้ง OpenCode
+        run: |
+          npm install --global @opencode/cli
+          opencode --version
+
+      - name: รันตรวจ 6 พรอมต์ (orient → audit → vote x3 → finalize)
+        id: audit
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-        run: python scripts/run_audit.py
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL }}
+          AUDIT_STRICTNESS: ${{ vars.AUDIT_STRICTNESS }}
+          CURRICULUM_FILE: ${{ steps.target.outputs.file }}
+        run: |
+          chmod +x scripts/audit.sh
+          if [ -n "${{ steps.target.outputs.file }}" ]; then
+            ./scripts/audit.sh "${{ steps.target.outputs.file }}"
+          else
+            ./scripts/audit.sh
+          fi
 
-      - name: Upload Audit Report Artifact
+      - name: เก็บรายงานเป็น Artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: audit-reports
+          name: audit-reports-${{ github.run_number }}
           path: reports/
+          retention-days: 30
+
+      - name: ติดป้าย needs-human-review (ถ้าไม่ผ่าน)
+        if: always() && github.event_name == 'pull_request' && steps.audit.outputs.verdict != 'PASS'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['needs-human-review']
+            });
+
+      - name: คอมเมนต์ผลตรวจบน PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const verdict = '${{ steps.audit.outputs.verdict }}' || 'ไม่ทราบผล';
+            const report = '${{ steps.audit.outputs.report_path }}' || 'reports/';
+            const denies = '${{ steps.audit.outputs.denies }}' || '?';
+            const icon = verdict === 'PASS' ? '✅' : '⚠️';
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `${icon} **ผลตรวจหลักสูตร: ${verdict}** (เสียง DENY: ${denies})\n\nรายงานฉบับเต็ม: \`${report}\` (ดูใน Artifacts)`
+            });
+
+      - name: Commit รายงานกลับ (push/สั่งเอง)
+        # [skip ci] + ตัวกรอง path ด้านบนกันงานวนซ้ำ
+        if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain reports/)" ]; then
+            echo "ไม่มีรายงานใหม่ให้ commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add reports/
+          git commit -m "docs: รายงานตรวจ (${{ steps.audit.outputs.verdict }}) [skip ci]" || exit 0
+          git push
